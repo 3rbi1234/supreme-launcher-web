@@ -1,0 +1,123 @@
+<?php
+// servers.php - Server Browser
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Browser | Supreme RolePlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#060608;--gold:#FFD54A;--text:#fff;--dim:#7a7a8a;--border:rgba(255,255,255,0.04);--glass:rgba(13,13,20,0.9);--green:#4ADE80;--red:#EF4444}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        .lang-wrap{position:fixed;top:20px;right:20px;z-index:999}
+        .lang-flag{width:20px;height:14px;border-radius:2px}
+        .lang-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--glass);border:1px solid var(--border);border-radius:30px;cursor:pointer;color:#fff;font-size:12px;font-weight:600;backdrop-filter:blur(16px);transition:0.2s}
+        .lang-btn:hover{border-color:var(--gold)}
+        .lang-drop{display:none;position:absolute;top:calc(100%+8px);right:0;background:rgba(10,10,16,0.98);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;min-width:150px;box-shadow:0 20px 60px rgba(0,0,0,0.9)}
+        .lang-wrap.open .lang-drop{display:block}
+        .lang-opt{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;transition:0.2s}
+        .lang-opt:hover{background:rgba(255,213,74,0.05);color:#fff}
+        .lang-opt.active{color:var(--gold)}
+        .lang-arrow{font-size:8px;transition:0.2s}
+        .lang-wrap.open .lang-arrow{transform:rotate(180deg)}
+        .page{max-width:900px;margin:0 auto;padding:60px 20px 40px}
+        .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--dim);text-decoration:none;font-size:0.9rem;font-weight:500;margin-bottom:32px;transition:0.2s}
+        .back-link:hover{color:var(--gold)}
+        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:16px}
+        .header h1{font-size:2rem;font-weight:800}
+        .summary{display:flex;gap:12px;flex-wrap:wrap}
+        .sum-item{display:flex;align-items:center;gap:10px;background:var(--glass);border:1px solid var(--border);border-radius:16px;padding:12px 20px;backdrop-filter:blur(12px)}
+        .sum-item img{width:22px;height:22px;opacity:0.7}
+        .sum-num{font-size:1.4rem;font-weight:700;color:var(--gold)}
+        .sum-lbl{font-size:0.7rem;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+        .search-box{position:relative;margin-bottom:20px}
+        .search-box input{width:100%;background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:14px 44px;color:#fff;font-size:0.9rem;outline:none;transition:0.2s;backdrop-filter:blur(12px)}
+        .search-box input:focus{border-color:var(--gold);box-shadow:0 0 20px rgba(255,213,74,0.1)}
+        .search-box input::placeholder{color:#444}
+        .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#555}
+        .search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#888;font-size:18px;cursor:pointer;display:none;padding:4px 8px;border-radius:50%}
+        .search-clear:hover{color:#fff;background:rgba(255,255,255,0.05)}
+        .server-list{display:flex;flex-direction:column;gap:8px}
+        .server-card{display:flex;align-items:center;gap:16px;background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:20px 22px;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(12px);border-left:3px solid transparent;position:relative;overflow:hidden}
+        .server-card::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at left, rgba(255,213,74,0.03) 0%, transparent 70%);opacity:0;transition:0.3s}
+        .server-card:hover::before{opacity:1}
+        .server-card:hover{border-color:rgba(255,213,74,0.15);border-left-color:var(--gold);transform:translateX(6px);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+        .server-card.active{border-color:var(--gold);border-left-color:var(--gold);background:rgba(255,213,74,0.03)}
+        .flag-svg{width:36px;height:24px;border-radius:4px;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+        .server-info{flex:1;min-width:0}
+        .server-name{font-weight:700;font-size:1rem;margin-bottom:4px}
+        .server-tags{display:flex;gap:4px;flex-wrap:wrap}
+        .tag{font-size:0.6rem;font-weight:700;color:rgba(255,255,255,0.35);border:1px solid rgba(255,255,255,0.08);padding:3px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px}
+        .server-gamemode{font-size:0.8rem;color:var(--dim);font-weight:600;min-width:90px;text-align:center}
+        .server-meta{display:flex;align-items:center;gap:20px;flex-shrink:0}
+        .meta-item{display:flex;align-items:center;gap:6px;font-weight:700;font-size:0.9rem}
+        .meta-item img{width:20px;height:20px;opacity:0.7}
+        .players-online{color:var(--green)}
+        .players-offline{color:var(--red)}
+        .ping-good{color:var(--green)}
+        .ping-medium{color:var(--gold)}
+        .ping-high{color:var(--red)}
+        .loading-text{text-align:center;padding:60px;color:var(--dim);font-size:0.9rem}
+        .loading-spinner{width:30px;height:30px;border:2px solid rgba(255,255,255,0.05);border-top:2px solid var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @media(max-width:700px){.server-gamemode{display:none}.server-card{flex-wrap:wrap;gap:10px}.server-meta{width:100%;justify-content:flex-end}.page{padding:40px 12px 30px}}
+    </style>
+</head>
+<body>
+<div class="lang-wrap" id="langWrap">
+    <button class="lang-btn" id="langBtn"><img id="langFlag" src="uk.png" class="lang-flag"><span id="langCode">EN</span><span class="lang-arrow">▼</span></button>
+    <div class="lang-drop"><div class="lang-opt active" data-lang="en"><img src="uk.png" class="lang-flag"> English</div><div class="lang-opt" data-lang="de"><img src="germany.png" class="lang-flag"> Deutsch</div></div>
+</div>
+<div class="page">
+    <a href="index.php" class="back-link" id="backLink">← Back to Launcher</a>
+    <div class="header"><h1 id="pageTitle">Server Browser</h1>
+        <div class="summary"><div class="sum-item"><img src="people.png"><span class="sum-num" id="totalBrowser">—</span><span class="sum-lbl" id="lblTotal">Players Online</span></div><div class="sum-item"><span class="sum-num" id="serverCount">—</span><span class="sum-lbl" id="lblServers">Servers</span></div></div>
+    </div>
+    <div class="search-box"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="searchInput" placeholder="Search servers..."><button class="search-clear" id="searchClear">×</button></div>
+    <div class="server-list" id="serverList"><div class="loading-text"><div class="loading-spinner"></div>Loading servers...</div></div>
+</div>
+<script>
+const TX={en:{back:'← Back to Launcher',title:'Server Browser',players:'Players Online',servers:'Servers',search:'Search servers...',loading:'Loading servers...'},de:{back:'← Zurück zum Launcher',title:'Server Browser',players:'Spieler Online',servers:'Server',search:'Server suchen...',loading:'Server werden geladen...'}};
+let lang=localStorage.getItem('srp_lang')||'en';
+function setLang(l){lang=l;localStorage.setItem('srp_lang',l);const t=TX[l];
+document.getElementById('backLink').textContent=t.back;document.getElementById('pageTitle').textContent=t.title;
+document.getElementById('lblTotal').textContent=t.players;document.getElementById('lblServers').textContent=t.servers;
+document.getElementById('searchInput').placeholder=t.search;
+document.getElementById('langFlag').src=l==='en'?'uk.png':'germany.png';
+document.getElementById('langCode').textContent=l.toUpperCase();
+document.querySelectorAll('.lang-opt').forEach(o=>o.classList.toggle('active',o.dataset.lang===l));}
+setLang(lang);
+document.getElementById('langBtn').addEventListener('click',e=>{e.stopPropagation();document.getElementById('langWrap').classList.toggle('open')});
+document.querySelectorAll('.lang-opt').forEach(o=>o.addEventListener('click',function(e){e.stopPropagation();setLang(this.dataset.lang);document.getElementById('langWrap').classList.remove('open')}));
+document.addEventListener('click',e=>{if(!document.getElementById('langWrap').contains(e.target))document.getElementById('langWrap').classList.remove('open')});
+async function loadServers(){
+    document.getElementById('serverList').innerHTML='<div class="loading-text"><div class="loading-spinner"></div>'+TX[lang].loading+'</div>';
+    try{
+        const r=await fetch('server_status.php');const d=await r.json();
+        document.getElementById('totalBrowser').textContent=d.total_players;
+        document.getElementById('serverCount').textContent=d.online_servers+'/'+d.total_servers;
+        const active=localStorage.getItem('srp_activeServer')||'en';
+        document.getElementById('serverList').innerHTML='';
+        d.servers.forEach(s=>{
+            const card=document.createElement('div');
+            card.className='server-card'+(s.key===active?' active':'');
+            const flagSVG=s.key==='en'?'<svg class="flag-svg" viewBox="0 0 60 40"><rect width="60" height="40" fill="#012169"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#fff" stroke-width="8"/><path d="M0,0 L60,40 M60,0 L0,40" stroke="#C8102E" stroke-width="5"/><path d="M30,0 V40 M0,20 H60" stroke="#fff" stroke-width="12"/><path d="M30,0 V40 M0,20 H60" stroke="#C8102E" stroke-width="7"/></svg>':'<svg class="flag-svg" viewBox="0 0 60 40"><rect width="60" height="14" fill="#000"/><rect y="14" width="60" height="13" fill="#DD0000"/><rect y="27" width="60" height="13" fill="#FFCE00"/></svg>';
+            const pClass=s.online?'players-online':'players-offline';
+            const pText=s.online?s.players:'Offline';
+            let pingClass='',pingText='—';
+            if(s.online&&s.ping>0){pingText=s.ping+'ms';pingClass=s.ping<80?'ping-good':s.ping<160?'ping-medium':'ping-high';}
+            card.innerHTML=flagSVG+'<div class="server-info"><div class="server-name">'+s.browserName+'</div><div class="server-tags">'+s.tags.map(t=>'<span class="tag">'+t+'</span>').join('')+'</div></div><div class="server-gamemode">'+s.gamemode+'</div><div class="server-meta"><div class="meta-item '+pClass+'"><img src="people.png">'+pText+'</div><div class="meta-item '+pingClass+'"><img src="wifi.png">'+pingText+'</div></div>';
+            card.addEventListener('click',()=>{localStorage.setItem('srp_activeServer',s.key);window.location.href='index.php'});
+            document.getElementById('serverList').appendChild(card);
+        });
+    }catch(e){document.getElementById('serverList').innerHTML='<div class="loading-text">Could not load servers. Retrying...</div>';setTimeout(loadServers,3000);}
+}
+document.getElementById('searchInput').addEventListener('input',function(){const q=this.value.toLowerCase();document.getElementById('searchClear').style.display=q?'block':'none';document.querySelectorAll('.server-card').forEach(c=>c.style.display=c.querySelector('.server-name').textContent.toLowerCase().includes(q)?'flex':'none')});
+document.getElementById('searchClear').addEventListener('click',function(){document.getElementById('searchInput').value='';this.style.display='none';document.querySelectorAll('.server-card').forEach(c=>c.style.display='flex')});
+loadServers();setInterval(loadServers,20000);
+</script>
+</body>
+</html>

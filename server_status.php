@@ -1,0 +1,101 @@
+<?php
+// server_status.php - Gets server info using local proxy
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Cache-Control: no-cache');
+
+// Your servers
+$servers = [
+    'en' => [
+        'key' => 'en',
+        'name' => 'EN #1',
+        'browserName' => 'Supreme RolePlay | Server 1 | gta5supreme.com',
+        'ip' => '207.180.229.160',
+        'port' => '30120',
+        'tags' => ['ROLEPLAY', 'VOICE', 'JOBS', 'GANGS'],
+        'gamemode' => 'ROLEPLAY'
+    ],
+    'de' => [
+        'key' => 'de',
+        'name' => 'DE #1',
+        'browserName' => 'Supreme RolePlay | Server 2 | gta5supreme.com',
+        'ip' => '2.70.217.223',
+        'port' => '30120',
+        'tags' => ['ROLLENSPIEL', 'SPRACHE', 'DEUTSCH'],
+        'gamemode' => 'ROLLENSPIEL'
+    ]
+];
+
+// Get the base URL of this website
+$protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+$baseUrl = $protocol . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']);
+
+function checkServer($ip, $port, $baseUrl) {
+    $urls = [
+        "http://$ip:$port/dynamic.json",
+        "http://$ip:$port/info.json"
+    ];
+    
+    foreach ($urls as $targetUrl) {
+        $proxyUrl = $baseUrl . '/proxy.php?url=' . urlencode($targetUrl);
+        
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $proxyUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => false
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode === 200 && $response) {
+            $data = json_decode($response, true);
+            if ($data) {
+                $result = [
+                    'online' => true,
+                    'players' => 0,
+                    'ping' => isset($data['_ping']) ? (int)$data['_ping'] : 0
+                ];
+                
+                if (isset($data['clients'])) {
+                    $result['players'] = (int)$data['clients'];
+                } elseif (isset($data['variables']['players'])) {
+                    $result['players'] = (int)$data['variables']['players'];
+                }
+                
+                return $result;
+            }
+        }
+    }
+    
+    return ['online' => false, 'players' => 0, 'ping' => 0];
+}
+
+$results = [];
+$totalPlayers = 0;
+$onlineServers = 0;
+
+foreach ($servers as $key => $server) {
+    $status = checkServer($server['ip'], $server['port'], $baseUrl);
+    
+    $serverResult = array_merge($server, $status);
+    
+    if ($status['online']) {
+        $totalPlayers += $status['players'];
+        $onlineServers++;
+    }
+    
+    $results[] = $serverResult;
+}
+
+echo json_encode([
+    'servers' => $results,
+    'total_players' => $totalPlayers,
+    'total_servers' => count($servers),
+    'online_servers' => $onlineServers
+], JSON_PRETTY_PRINT);
+?>

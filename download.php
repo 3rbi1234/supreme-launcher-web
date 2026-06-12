@@ -1,0 +1,4 @@
+<?php
+$file_id = '1knKg6yPBV91hN4fL4anQ6e95-buD-KFX';
+header('Location: https://drive.google.com/uc?export=download&id=' . $file_id);
+exit;
